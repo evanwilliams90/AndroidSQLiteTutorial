@@ -5,11 +5,15 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.content.Context;
 import android.os.Bundle;
 import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.Switch;
 import android.widget.Toast;
+
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -18,6 +22,8 @@ public class MainActivity extends AppCompatActivity {
     EditText et_name, et_age;
     Switch sw_activeCustomer;
     ListView lv_customerList;
+    ArrayAdapter customerArrayAdapter;
+    DatabaseHelper databaseHelper;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -31,6 +37,10 @@ public class MainActivity extends AppCompatActivity {
         et_name = findViewById(R.id.et_name);
         sw_activeCustomer = findViewById(R.id.sw_active);
         lv_customerList = findViewById(R.id.lv_customerList);
+
+        databaseHelper = new DatabaseHelper(MainActivity.this);
+
+        ShowCustomersOnListView(databaseHelper);
 
         // button listeners
         btn_add.setOnClickListener(new View.OnClickListener() {
@@ -50,9 +60,12 @@ public class MainActivity extends AppCompatActivity {
                     Toast.makeText(MainActivity.this, "Error creating customer", Toast.LENGTH_SHORT).show();
                 }
 
-                DatabaseHelper databaseHelper = new DatabaseHelper(MainActivity.this);
+                databaseHelper = new DatabaseHelper(MainActivity.this);
 
                 boolean success = databaseHelper.addOne(customerModel);
+
+                ShowCustomersOnListView(databaseHelper);
+
                 Toast.makeText(MainActivity.this, "Success = " + success, Toast.LENGTH_SHORT).show();
 
             }
@@ -61,11 +74,50 @@ public class MainActivity extends AppCompatActivity {
         btn_viewAll.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Toast.makeText(MainActivity.this, "View All button", Toast.LENGTH_SHORT).show();
+
+                databaseHelper = new DatabaseHelper(MainActivity.this);
+                //List<CustomerModel> everyone = databaseHelper.getEveryone();
+
+                //Toast.makeText(MainActivity.this, everyone.toString(), Toast.LENGTH_SHORT).show();
+
+                // Print in list area instead of toast
+                ShowCustomersOnListView(databaseHelper);
 
             }
         });
 
+
+        // item click listener to delete clicked records from the list
+        lv_customerList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int i, long l) {
+
+                // identify and delete clicked customer
+                CustomerModel clickedCustomer = (CustomerModel) parent.getItemAtPosition(i);
+                databaseHelper.deleteOne(clickedCustomer);
+
+                // Print updated list
+                ShowCustomersOnListView(databaseHelper);
+
+                // Toast of deleted item
+                Toast.makeText(MainActivity.this, "Deleted " + clickedCustomer, Toast.LENGTH_SHORT).show();
+
+            }
+        });
+
+
+
+    }
+
+
+
+
+
+
+
+    private void ShowCustomersOnListView(DatabaseHelper databaseHelper2) {
+        customerArrayAdapter = new ArrayAdapter<CustomerModel>(MainActivity.this, android.R.layout.simple_list_item_1, databaseHelper2.getEveryone());
+        lv_customerList.setAdapter(customerArrayAdapter);
     }
 
 }
